@@ -1,4 +1,4 @@
-# Problem definition:
+# Problem definition
 # Placing 5 production well sequentially in 2D 15-by-15 heterogeneous reservoir
 # Period of well placement is 120 days, and total production period is 600 days (Well placement time from simulation starts: 0-120-240-360-480)
 # 다 작성되면 우성이 코드 보내주기
