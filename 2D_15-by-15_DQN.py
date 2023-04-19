@@ -239,8 +239,18 @@ def main():
         # ---- Master simulation data file (.dat)
         # ---- Master simulation include template file (.template.inc)
         '''
-        args.simulation_directory = "D:\\Lab Meeting\\Simulation Model\\2D_5-by-5\\Simulation\\Q-Learning"
-        args.simulation_template = args.simulation_directory + "\\2D_5-by-5.template"
+
+        # Can be improved by define function or class of simulator (ECL/CMG)
+        # Using CMG Simulator
+        args.master_directory = "H:\\Lab_Meeting\\Simulation_Model\\Simulation\\2D_15-by-15_DQN\\Simulation"
+        args.simulation_directory = "" # Location of actual simulation of each case happens
+        args.simulation_data_file = "" # Location of actual simulation data file
+        args.simulation_include_file = "" # Location of actual simulation include file
+        args.simulation_log = "" # Location of actual simulation log file
+        args.master_simulation_data_file = args.master_directory + "\\2D_15-by-15.dat" # Location of master simulation data file
+        args.master_well_placement_template = args.master_directory + "\\2D_15-by-15_WellPlacement.template_1.inc" # Location of master simulation include file
+        args.results_report_command_template = args.master_directory + "\\2D_15-by-15_Results_Template.rwd" # Location of master CMG Results Report command file
+        args.simulation_results_report_command = "" # Location of actual CMG Results Report command file
 
         # Temperature parameter at Boltzmann policy
         # Big tau == more exploration
