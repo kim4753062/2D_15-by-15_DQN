@@ -76,7 +76,7 @@ def main():
 
         # Can be improved by define function or class of simulator (ECL/CMG)
         # Using CMG Simulator
-        args.master_directory = "H:\\Lab_Meeting\\Simulation_Model\\Simulation\\2D_15-by-15_DQN\\Simulation"
+        args.master_directory = "H:\\Lab_Meeting\\Simulation_Model\\Simulation\\2D_15-by-15_DQN\\Simulation\\Greedy_search"
         args.simulation_directory = "" # Location of actual simulation of each case happens
         args.simulation_data_file = "" # Location of actual simulation data file
         args.simulation_include_file = "" # Location of actual simulation include file
