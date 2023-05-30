@@ -1,0 +1,12 @@
+1. 필요한 모듈 및 라이브러리 import 수행
+
+2. 필요한 인수 (argument) 정의: argparse를 이용하여, "args" 객체에 저장하여 어떤 함수든 필요한 인수를
+"args"에서 받아와 사용할 수 있도록 함.
+
+3. 필요한 클래스 및 함수 (추후 클래스 내 메서드로 통합 예정) 정의
+- 클래스
+-- WellPlacementSample: 각 timestep(유정 배치 시점)마다의 유정 배치, 동적자료, 구간별 NPV를 저장하는 객체
+--- well_loc_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 유정 배치 상황을 나타냄. 0: 유정 배치 X, 1: 유정 배치 O
+--- well_loc_list (1D-array): tuple의 형태로 각 timestep마다의 유정 배치 좌표 (x, y)를 저장함.
+--- PRESSURE_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 격자별 압력을 저장함.
+--- SOIL_map (3D-array): 
