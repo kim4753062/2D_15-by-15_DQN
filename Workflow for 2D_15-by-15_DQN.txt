@@ -9,4 +9,5 @@
 --- well_loc_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 유정 배치 상황을 나타냄. 0: 유정 배치 X, 1: 유정 배치 O
 --- well_loc_list (1D-array): tuple의 형태로 각 timestep마다의 유정 배치 좌표 (x, y)를 저장함.
 --- PRESSURE_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 격자별 압력을 저장함.
---- SOIL_map (3D-array): 
+--- SOIL_map (3D-array): 2D-array(list) 형태로 각 timestep마다의 격자별 오일 포화도를 저장함.
+
