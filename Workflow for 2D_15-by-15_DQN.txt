@@ -3,11 +3,28 @@
 2. 필요한 인수 (argument) 정의: argparse를 이용하여, "args" 객체에 저장하여 어떤 함수든 필요한 인수를
 "args"에서 받아와 사용할 수 있도록 함.
 
-3. 필요한 클래스 및 함수 (추후 클래스 내 메서드로 통합 예정) 정의
-- 클래스
+3. 필요한 클래스, 모델 및 함수 (추후 클래스 내 메서드로 통합 예정) 정의
+[클래스]
 -- WellPlacementSample: 각 timestep(유정 배치 시점)마다의 유정 배치, 동적자료, 구간별 NPV를 저장하는 객체
 --- well_loc_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 유정 배치 상황을 나타냄. 0: 유정 배치 X, 1: 유정 배치 O
 --- well_loc_list (1D-array): tuple의 형태로 각 timestep마다의 유정 배치 좌표 (x, y)를 저장함.
 --- PRESSURE_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 격자별 압력을 저장함.
 --- SOIL_map (3D-array): 2D-array(list) 형태로 각 timestep마다의 격자별 오일 포화도를 저장함.
 
+-- Experience: DQN 학습 및 최적해 도출에 사용될 (s, a, r, s') 자료 한 세트를 구성하는 객체
+--- current_state (3D-array): 현재 상태 (State)를 나타내는 2D-array 자료 3개 (격자별 압력, 격자별 오일 포화도, 격자별 유정 배치 상황)를 저장함.
+--- current_action (tuple): 현재 행동 (Action)을 나타내는 tuple 자료 1개 (유정 배치 좌표 (x, y))를 저장함.
+--- reward (float): 현재 상태에서 행동을 취한 보상을 나타내는 float 자료 1개를 저장함 (해당 timestep에서의 NPV와 동일함).
+--- next_state (3D-array): 다음 상태 (State)를 나타내는 2D-array 자료 3개 (격자별 압력, 격자별 오일 포화도, 격자별 유정 배치 상황) 를 저장함.
+
+[모델]
+-- BasicBlock: Residual block을 구현한 객체
+
+-- DQN: Deep Q-Network를 CNN 형태로 구현한 객체
+
+[메서드/함수]
+-- _read_ecl_prt_2d: ECLIPSE 시뮬레이션 결과로 생성되는 PRT 파일을 읽어, 원하는 자료를 추출하는 함수. 2D-array 형태로 반환하며, 2023-05-30 기준 (1) 격자별 압력과 (2) 격자별 오일 포화도를 추출함.
+
+-- _read_ecl_rsm: ECLIPSE 시뮬레이션 결과롤 생성되는 RSM 파일을 읽어, timestep 별 (1) 누적 오일 생산량, (2) 누적 물 생산량, (3) 누적 물 주입량을 구하는 함수, 1D-array 형태로 반환함.
+
+-- _run_program:
