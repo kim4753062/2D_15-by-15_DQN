@@ -5,7 +5,7 @@
 
 3. 필요한 클래스, 모델 및 함수 (추후 클래스 내 메서드로 통합 예정) 정의
 [클래스]
--- WellPlacementSample: 각 timestep(유정 배치 시점)마다의 유정 배치, 동적자료, 구간별 NPV를 저장하는 객체
+-- WellPlacementSample: 각 timestep(유정 배치 시점)마다의 유정 배치, 동적자료, 구간별 NPV를 저장하는 객체 (Full 시뮬레이션 세트 1개)
 --- well_loc_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 유정 배치 상황을 나타냄. 0: 유정 배치 X, 1: 유정 배치 O
 --- well_loc_list (1D-array): tuple의 형태로 각 timestep마다의 유정 배치 좌표 (x, y)를 저장함.
 --- PRESSURE_map (3D-array): 2D-array (list) 형태로 각 timestep마다의 격자별 압력을 저장함.
@@ -27,4 +27,23 @@
 
 -- _read_ecl_rsm: ECLIPSE 시뮬레이션 결과롤 생성되는 RSM 파일을 읽어, timestep 별 (1) 누적 오일 생산량, (2) 누적 물 생산량, (3) 누적 물 주입량을 구하는 함수, 1D-array 형태로 반환함.
 
--- _run_program:
+-- _run_program: ECLIPSE 또는 FRONTSIM 시뮬레이션을 수행함.
+
+-- _Boltzmann_policy: DQN 결과로 반환되는 Q-value map을 이용해 유정 배치 확률 map을 계산하여 반환하는 함수. 기존에 유정이 배치된 격자에 대해서는 확률을 0으로 만들고, 나머지 확률들의 합이 1이 되도록 스케일링을 수행함.
+
+-- _select_well_loc: _Boltzmann_policy의 결과로 반환되는 유정 배치 확률 map을 이용해 유정 배치 누적확률 list를 생성하고, 난수를 생성하여 다음에 배치될 유정 배치 좌표를 tuple 형태로 반환함.
+
+-- _calculate_income: 주어진 timestep 구간에서의 FOPT, FWPT, FWIT를 이용해, 해당 timestep에서의 NPV를 계산하여 float 형태로 반환함. (추후 보상 (Reward)으로 사용됨)
+
+-- _ecl_data_generate: ECLIPSE 시뮬레이션 데이터파일 (.DATA)을 생성하는 함수.
+== 추후 RESTART 옵션을 사용하도록 수정해야함. ==
+
+-- _simulation_sampler: 현재 DQN을 이용해 WellPlacementSample 객체를 생성하는 함수.
+DQN을 이용해, 각 timestep마다 Q-value map을 얻고 > 유정 배치 확률 map을 얻고 > 유정 위치를 얻고 > 시뮬레이션 수행 후 격자별 압력과 격자별 오일 포화도, FOPT, FWPT, FWIT를 얻고 보상 (Reward) 계산 후 저장하여
+WellPlacementSample 클래스에 해당하는 well_placement_sample을 반환함.
+
+-- _experience_sampler: WellPlacementSample 클래스의 객체들에서 DQN 학습 및 최적해 도출에 사용될 (s, a, r, s') 자료 한 세트를 구성하는 객체인 Experience를 만드는 함수
+
+====== 해야할 일 ======
+1. Dataset 및 DataLoader를 이용해 DQN (CNN) 학습 및 추론이 가능하도록 만들기
+2. list를 torch.tensor로 변환한 상태로 WellPlacementSample 및 Experience 객체에 저장할 지, 아니면 list로 저장해두고 실제 CNN에 사용할 때만 torch.tensor로 변환할 지.
