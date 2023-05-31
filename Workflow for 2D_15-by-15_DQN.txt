@@ -44,6 +44,11 @@ WellPlacementSample 클래스에 해당하는 well_placement_sample을 반환함
 
 -- _experience_sampler: WellPlacementSample 클래스의 객체들에서 DQN 학습 및 최적해 도출에 사용될 (s, a, r, s') 자료 한 세트를 구성하는 객체인 Experience를 만드는 함수
 
+4. DQN 알고리즘 구현함
+
+
 ====== 해야할 일 ======
-1. Dataset 및 DataLoader를 이용해 DQN (CNN) 학습 및 추론이 가능하도록 만들기
+1. Dataset 및 DataLoader를 이용해 DQN (CNN) 학습 및 추론이 가능하도록 만들기.
 2. list를 torch.tensor로 변환한 상태로 WellPlacementSample 및 Experience 객체에 저장할 지, 아니면 list로 저장해두고 실제 CNN에 사용할 때만 torch.tensor로 변환할 지.
+>> 일단은 list 또는 numpy로 저장하고, DQN에 쓸 때만 tensor로 쓰는게 더 깔끔할 것으로 보임. torch.tensor가 사용하기 편한 것도 아니니까.
+3. RESTART 옵션을 쓸 수 있도록 _ecl_data_generate 함수를 수정해야 함.
