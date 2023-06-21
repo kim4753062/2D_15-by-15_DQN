@@ -195,7 +195,7 @@ def main():
 
         for b in range(1, args.replay_batch_num + 1):
             # Extract b-th experience data from replay memory
-            target_Q = deque()  # Target Q value deque, yi
+            target_Q = deque()  # Target Q value deque, yi,
             current_Q = deque()  # For calculation of loss
             # batch = random.sample(replay_memory, args.batch_size)
             dataloader = DataLoader(dataset=replay_memory, batch_size=args.batch_size, shuffle=True)
