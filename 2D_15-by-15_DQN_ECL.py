@@ -297,15 +297,14 @@ class Experience:
         self.reward = None
         self.next_state = list
 
-        self.current_state, self.current_action, self.reward, self.next_state = Experience.__transform__()
-
     def __transform__(self):
-        current_state = torch.tensor(data=self.current_state, dtype=torch.float, device=args.device, requires_grad=False)
-        current_action = torch.tensor(data=self.current_action, dtype=torch.float, device=args.device, requires_grad=False)
-        reward = torch.tensor(data=self.reward, dtype=torch.float, device=args.device, requires_grad=False)
-        next_state = torch.tensor(data=self.next_state, dtype=torch.float, device=args.device, requires_grad=False)
+        self.current_state = torch.tensor(data=self.current_state, dtype=torch.float, device=self.args.device, requires_grad=False)
+        self.current_action = torch.tensor(data=self.current_action, dtype=torch.float, device=self.args.device, requires_grad=False)
+        self.reward = torch.tensor(data=self.reward, dtype=torch.float, device=self.args.device, requires_grad=False)
+        self.next_state = torch.tensor(data=self.next_state, dtype=torch.float, device=self.args.device, requires_grad=False)
 
-        return current_state, current_action, reward, next_state
+    def transform(self):
+        self.__transform__()
 
 ###################### Class: Experience sample Dataset (for DataLoader) ####################### Certified
 class Experience_list(Dataset):
@@ -719,7 +718,7 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
         well_placement_map = deepcopy(well_placement_sample.well_loc_map[time_step])
         for i in range(0, args.gridnum_x):
             for j in range(0, args.gridnum_y):
-                if (i == well_loc[0]) and (j == well_loc[1]):
+                if (i == well_loc[0]-1) and (j == well_loc[1]-1):
                     well_placement_map[j][i] = 1
 
         # Append PRESSURE map, SOIL map, Well placement map, Income
@@ -742,11 +741,12 @@ def _experience_sampler(args, simulation_sample_list: list[WellPlacementSample])
     for i in range(0, args.sample_num_per_iter):
         for j in range(0, args.total_well_num_max):
             exp = Experience(args=args)
-            torch.tensor(data=list, dtype=torch.float, device='cuda', requires_grad=True)
+            # torch.tensor(data=list, dtype=torch.float, device='cuda', requires_grad=True)
             exp.current_state = [simulation_sample_list[i].PRESSURE_map[j], simulation_sample_list[i].SOIL_map[j], simulation_sample_list[i].well_loc_map[j]]
             exp.current_action = simulation_sample_list[i].well_loc_list[j]
             exp.reward = simulation_sample_list[i].income[j]
             exp.next_state = [simulation_sample_list[i].PRESSURE_map[j+1], simulation_sample_list[i].SOIL_map[j+1], simulation_sample_list[i].well_loc_map[j+1]]
+            exp.transform()
             experience_list.append(exp)
 
     experience_sample = random.sample(experience_list, args.experience_num_per_iter)
