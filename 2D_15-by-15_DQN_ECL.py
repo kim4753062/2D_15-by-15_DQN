@@ -192,9 +192,8 @@ def main():
 
             # We want to know indices of Experience samples which are selected, but DataLoader does not support fuction
             # of searching indices of selected Experience samples directly.
-            # Thus, (1) Select Experience samples in replay_memory by Subset() method (Subset() size=args.batch_size),
-            # and (2) Perform DQN training with selected subset of Experience samples
-            exp_idx = [random.randint(0, len(replay_memory)) for r in range(args.batch_size)] # Indices for Subset(), length of list should be args.batch_size
+            # Thus, (1) Select Experience samples in replay_memory and (2) Perform DQN training with selected subset of Experience samples
+            exp_idx = [random.randint(0, len(replay_memory)-1) for r in range(args.batch_size)] # Indices for subset
             subset_current = Experience_list(args=args)
             for i in range(args.batch_size):
                 subset_current.exp_list.append(replay_memory[exp_idx[i]])
@@ -220,8 +219,6 @@ def main():
                     #     for b in replay_memory[exp_idx[i]].next_state[b][a]:
                     #         if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
                     #             yi_mask[b][a] = np.NINF
-                    # # max_action = max(Q at state s')
-                    # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
                     ###############################################################################################################################
                     ###############################################################################################################################
                     ###############################################################################################################################
@@ -229,6 +226,8 @@ def main():
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
                         current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
+                        # # max_action = max(Q at state s')
+                        # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
                         # next_Q.append(max. of next_Q_map)
 
                         # if well_num == 5 (terminal state):
@@ -239,7 +238,7 @@ def main():
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
                         elif np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
-                            target_Q.append(replay_memory[exp_idx[i]].reward + args.discount_factor * (yi[row][col]))
+                            target_Q.append(replay_memory[exp_idx[i]].reward + args.discount_factor * (next_Q[i]))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
