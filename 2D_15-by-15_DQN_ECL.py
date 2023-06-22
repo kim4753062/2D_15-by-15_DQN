@@ -210,10 +210,26 @@ def main():
                     # Maximum Q-value at next_state for each Experience sample in batch only can be calculated as batch unit! (not Experience sample unit!)
                     # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
                     next_Q_map = Deep_Q_Network.forward(sample_next)
+                    ###############################################################################################################################
+                    ################################### DO WELL PLACEMENT MASKING JOB BEFORE FINDING MAX. Q-VALUE!!! ##############################
+                    ###############################################################################################################################
+                    # yi = Deep_Q_Network.forward(replay_memory[exp_idx[i]].next_state)
+                    # yi_mask = deepcopy(
+                    #     yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
+                    # for a in replay_memory[exp_idx[i]].next_state[2]:  # sample.next_state[2]: Well placement map
+                    #     for b in replay_memory[exp_idx[i]].next_state[b][a]:
+                    #         if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
+                    #             yi_mask[b][a] = np.NINF
+                    # # max_action = max(Q at state s')
+                    # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
+                    ###############################################################################################################################
+                    ###############################################################################################################################
+                    ###############################################################################################################################
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
                         current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
+                        # next_Q.append(max. of next_Q_map)
 
                         # if well_num == 5 (terminal state):
                         #   yi = ri
@@ -223,19 +239,11 @@ def main():
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
                         elif np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
-                            yi = Deep_Q_Network.forward(replay_memory[exp_idx[i]].next_state)
-                            yi_mask = deepcopy(yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
-                            for a in replay_memory[exp_idx[i]].next_state[2]:  # sample.next_state[2]: Well placement map
-                                for b in replay_memory[exp_idx[i]].next_state[b][a]:
-                                    if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
-                                        yi_mask[b][a] = np.NINF
-                            # max_action = max(Q at state s')
-                            row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
                             target_Q.append(replay_memory[exp_idx[i]].reward + args.discount_factor * (yi[row][col]))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
-                loss = criterion(yi, current_Q)
+                loss = criterion(target_Q, current_Q)
                 # Update Q-network parameter: theta = theta - args.learning_rate * grad(L(theta))
                 optimizer.zero_grad()
                 loss.backward()
