@@ -2,6 +2,7 @@
 # Placing 5 production well sequentially in 2D 15-by-15 heterogeneous reservoir
 # Period of well placement is 120 days, and total production period is 600 days (Well placement time from simulation starts: 0-120-240-360-480)
 # 다 작성되면 우성이 코드 보내주기
+import copy
 
 ######################################## 1. Import required modules #############################################
 import numpy as np
@@ -16,8 +17,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 
 import random
 import numpy.random
@@ -94,13 +94,13 @@ def main():
     # args.replay_memory_size = 1000 # Replay memory size, K
 
     # For Debugging
-    args.max_iteration = 3  # Maximum iteration num. of algorithm, MAX_STEPS
-    args.sample_num_per_iter = 5  # Simulation sample num. of each iteration of algorithm
-    args.experience_num_per_iter = 25  # Experience sample num. of each iteration of algorithm, h
+    args.max_iteration = 5  # Maximum iteration num. of algorithm, MAX_STEPS
+    args.sample_num_per_iter = 3  # Simulation sample num. of each iteration of algorithm
+    args.experience_num_per_iter = 15  # Experience sample num. of each iteration of algorithm, h
     args.replay_batch_num = 4  # Replay batch num., B
-    args.nn_update_num = 20  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
+    args.nn_update_num = 4  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
     args.batch_size = 8  # Batch size, N
-    args.replay_memory_size = 50  # Replay memory size, K
+    args.replay_memory_size = 30  # Replay memory size, K
 
     args.gridnum_x = 15
     args.gridnum_y = 15
@@ -184,72 +184,55 @@ def main():
                 replay_memory.exp_list.popleft()
             replay_memory.exp_list.append(experience_sample[i])
 
-        '''
-        # ALL FINISHED!
-        # Collect h experience (s, a, r, s') with current policy and save at replay memory
-        # 1. Generate simulation examples with current policy (sample_num: int) - Finished
-        # 2. Read and save (1) Pressure, Oil saturation, Well placement map at current time step (s) (2) Well placement at current time step (a),
-        # (3) NPV at current time step, and (4) Pressure, Oil saturation, Well placement map at next time step - Finished
-        # 3. Extract random experience from simulation examples (type: image?) - Finished
-        '''
-
         for b in range(1, args.replay_batch_num + 1):
-            # Extract b-th experience data from replay memory
-            target_Q = deque()  # Target Q value deque, yi,
+            # # Extract b-th experience data from replay memory
+            target_Q = deque()  # Target Q value, yi
             current_Q = deque()  # For calculation of loss
-            # batch = random.sample(replay_memory, args.batch_size)
-            dataloader = DataLoader(dataset=replay_memory, batch_size=args.batch_size, shuffle=True)
+            next_Q = deque() # For calculation of Target Q value
+
+            # We want to know indices of Experience samples which are selected, but DataLoader does not support fuction
+            # of searching indices of selected Experience samples directly.
+            # Thus, (1) Select Experience samples in replay_memory by Subset() method (Subset() size=args.batch_size),
+            # and (2) Perform DQN training with selected subset of Experience samples
+            exp_idx = [random.randint(0, len(replay_memory)) for r in range(args.batch_size)] # Indices for Subset(), length of list should be args.batch_size
+            subset_current = Experience_list(args=args)
+            for i in range(args.batch_size):
+                subset_current.exp_list.append(replay_memory[exp_idx[i]])
+            subset_next = copy.deepcopy(subset_current) # For calculation of max. Q-value at next state
+            for element in subset_next.exp_list: # Replace current state with next state, so if DataLoader called for subset_next, next state will be used for DQN.
+                element.current_state = element.next_state
+            batch_current = DataLoader(dataset=subset_current, batch_size=args.batch_size, shuffle=False)
+            batch_next = DataLoader(dataset=subset_next, batch_size=args.batch_size, shuffle=False)
 
             for u in range(1, args.nn_update_num + 1):
-                for i in range(1, args.batch_size + 1):
-                    # Calculate Target Q-value for all samples in b-th batch experience
-                    # for sample in batch: # Use DataLoader for Mini-Batch Learning
-                    # # self.reward = None
-                    # # self.next_state = list
-                    #     # if well_num == 5 (terminal state):
-                    #     #   yi = ri
-                    #     if np.cumsum(np.array(sample.next_state[2])) == 5:
-                    #         current_Q.append(Deep_Q_Network.forward(sample.current_state)[sample.current_action[1]][sample.current_action[0]]) # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
-                    #         target_Q.append(sample.reward)
-                    #     # elif well_num < 5 (non-terminal state):
-                    #     #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
-                    #     elif np.cumsum(np.array(sample.next_state[2])) < 5: # sample.next_state[2]: Well placement map
-                    #         current_Q.append(Deep_Q_Network.forward(sample.current_state)[sample.current_action[1]][sample.current_action[0]]) # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
-                    #         yi = Deep_Q_Network.forward(sample.next_state)
-                    #         yi_mask = deepcopy(yi) # For masking max_action in well placement list
-                    #         for i in sample.next_state[2]: # sample.next_state[2]: Well placement map
-                    #             for j in sample.next_state[2][i]:
-                    #                 if sample.next_state[2][i][j] == 1:
-                    #                     yi_mask[i][j] = np.NINF
-                    #         # max_action = max(Q at state s')
-                    #         row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
-                    #         target_Q.append(sample.reward + args.discount_factor * (yi[row][col]))
-                    # self.reward = None
-                    # self.next_state = list
+                for sample_current, sample_next in zip(batch_current, batch_next):
+                    # To get related data by searching replay_memory with exp_list, for loop was used.
+                    # Maximum Q-value at next_state for each Experience sample in batch only can be calculated as batch unit! (not Experience sample unit!)
+                    # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
+                    next_Q_map = Deep_Q_Network.forward(sample_next)
+                    for i in range(args.batch_size):
+                        # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
+                        # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
 
-                    for sample in batch:  # Use DataLoader for Mini-Batch Learning
                         # if well_num == 5 (terminal state):
                         #   yi = ri
-                        if np.cumsum(np.array(sample.next_state[2])) == 5:
-                            current_Q.append(Deep_Q_Network.forward(sample.current_state)[sample.current_action[1]][
-                                                 sample.current_action[
-                                                     0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
-                            target_Q.append(sample.reward)
+                        if np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
+                            target_Q.append(replay_memory[exp_idx[i]].reward)
+
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
-                        elif np.cumsum(np.array(sample.next_state[2])) < 5:  # sample.next_state[2]: Well placement map
-                            current_Q.append(Deep_Q_Network.forward(sample.current_state)[sample.current_action[1]][
-                                                 sample.current_action[
-                                                     0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
-                            yi = Deep_Q_Network.forward(sample.next_state)
-                            yi_mask = deepcopy(yi)  # For masking max_action in well placement list
-                            for i in sample.next_state[2]:  # sample.next_state[2]: Well placement map
-                                for j in sample.next_state[2][i]:
-                                    if sample.next_state[2][i][j] == 1:
-                                        yi_mask[i][j] = np.NINF
+                        elif np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
+                            yi = Deep_Q_Network.forward(replay_memory[exp_idx[i]].next_state)
+                            yi_mask = deepcopy(yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
+                            for a in replay_memory[exp_idx[i]].next_state[2]:  # sample.next_state[2]: Well placement map
+                                for b in replay_memory[exp_idx[i]].next_state[b][a]:
+                                    if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
+                                        yi_mask[b][a] = np.NINF
                             # max_action = max(Q at state s')
                             row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
-                            target_Q.append(sample.reward + args.discount_factor * (yi[row][col]))
+                            target_Q.append(replay_memory[exp_idx[i]].reward + args.discount_factor * (yi[row][col]))
+
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
                 loss = criterion(yi, current_Q)
@@ -281,14 +264,6 @@ class WellPlacementSample:
 
 ################################### Class: Experience sample ################################### Certified
 # Experience Class contains One set of (s, a, r, s').
-# class Experience:
-#     def __init__(self, args):
-#         self.args = args
-#         self.current_state = list
-#         self.current_action = None
-#         self.reward = None
-#         self.next_state = list
-
 class Experience:
     def __init__(self, args):
         self.args = args
@@ -306,7 +281,8 @@ class Experience:
     def transform(self):
         self.__transform__()
 
-###################### Class: Experience sample Dataset (for DataLoader) ####################### Certified
+
+###################### Class: Experience sample (Dataset for DataLoader) ####################### Certified
 class Experience_list(Dataset):
     def __init__(self, args):
         self.args = args
@@ -316,7 +292,7 @@ class Experience_list(Dataset):
         return len(self.exp_list)
 
     def __getitem__(self, idx):
-        return self.exp_list[idx]
+        return self.exp_list[idx].current_state
 
 ################################################################################################
 ################################## Definition: CNN Structure ###################################
@@ -380,11 +356,11 @@ class DQN(nn.Module):
         '''
         '''
         Structure of DQN
-        (1) input (gridnum_x*gridnum_y*len(state))
-        (2) Conv1-BatchNorm-ReLU (gridnum_x*gridnum_y*48)
-        (3) Residual block (gridnum_x*gridnum_y*48)
-        (4) Conv2-BatchNorm-ReLU (gridnum_x*gridnum_y*24)
-        (5) Conv3 (gridnum_x*gridnum_y*1) << Objective: Q-value of each action at current state
+        (1) input (Dim: (batch_size, len(state), gridnum_y, gridnum_x))
+        (2) Conv1-BatchNorm-ReLU (Dim: (batch_size, 48, gridnum_y, gridnum_x))
+        (3) Residual block (Dim: (batch_size, 48, gridnum_y, gridnum_x))
+        (4) Conv2-BatchNorm-ReLU (Dim: (batch_size, 24, gridnum_y, gridnum_x))
+        (5) Conv3 (Dim: (batch_size, 1, gridnum_y, gridnum_x)) << Objective: Q-value of each action at current state
         Action masking will be done by modified Boltzmann policy
         '''
         super(DQN, self).__init__()
