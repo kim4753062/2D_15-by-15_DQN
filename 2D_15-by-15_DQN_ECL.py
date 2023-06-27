@@ -212,9 +212,7 @@ def main():
                     ###############################################################################################################################
                     ################################### DO WELL PLACEMENT MASKING JOB BEFORE FINDING MAX. Q-VALUE!!! ##############################
                     ###############################################################################################################################
-                    # yi = Deep_Q_Network.forward(replay_memory[exp_idx[i]].next_state)
-                    # yi_mask = deepcopy(
-                    #     yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
+                    # yi_mask = deepcopy(yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
                     # for a in replay_memory[exp_idx[i]].next_state[2]:  # sample.next_state[2]: Well placement map
                     #     for b in replay_memory[exp_idx[i]].next_state[b][a]:
                     #         if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
