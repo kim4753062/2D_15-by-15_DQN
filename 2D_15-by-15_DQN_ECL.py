@@ -145,15 +145,15 @@ def main():
     ######################################## 3. Run algorithm #############################################
     # Directory setting
     if not os.path.exists(args.simulation_directory):
-        print('Simulation directory does not exists: Created Simulation directory\n')
+        print('Simulation directory does not exist: Created Simulation directory\n')
         os.mkdir(args.simulation_directory)
 
     if not os.path.exists(args.variable_save_directory):
-        print('Variable storage directory does not exists: Created Variable storage directory\n')
+        print('Variable storage directory does not exist: Created Variable storage directory\n')
         os.mkdir(args.variable_save_directory)
 
     if not os.path.exists(args.deeplearningmodel_save_directory):
-        print('Deep learning model storage directory does not exists: Created Deep learning model storage directory\n')
+        print('Deep learning model storage directory does not exist: Created Deep learning model storage directory\n')
         os.mkdir(args.deeplearningmodel_save_directory)
 
     # Implementation of DQN Algorithm
