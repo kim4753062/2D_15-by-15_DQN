@@ -208,25 +208,26 @@ def main():
                     # To get related data by searching replay_memory with exp_list, for loop was used.
                     # Maximum Q-value at next_state for each Experience sample in batch only can be calculated as batch unit! (not Experience sample unit!)
                     # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                    next_Q_map = Deep_Q_Network.forward(sample_next)
-                    ###############################################################################################################################
-                    ################################### DO WELL PLACEMENT MASKING JOB BEFORE FINDING MAX. Q-VALUE!!! ##############################
-                    ###############################################################################################################################
-                    # yi_mask = deepcopy(yi)  # For masking max_action (Action which has maximum Q-value) in well placement list
-                    # for a in replay_memory[exp_idx[i]].next_state[2]:  # sample.next_state[2]: Well placement map
-                    #     for b in replay_memory[exp_idx[i]].next_state[b][a]:
-                    #         if replay_memory[exp_idx[i]].next_state[2][b][a] == 1:
-                    #             yi_mask[b][a] = np.NINF
-                    ###############################################################################################################################
-                    ###############################################################################################################################
-                    ###############################################################################################################################
+                    next_Q_map = Deep_Q_Network.forward(sample_next) # Tensor >> Tensor
+
+                    # Do Well placement masking before finding max. Q-value
+                    # next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy())
+                    next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy(), axis=1) # For 2-D well placement
+                    for i in range(args.batch_size):
+                        for row in range(len(replay_memory[exp_idx[i]].next_state[2])): # sample.next_state[2]: Well placement map
+                            for col in range(len(replay_memory[exp_idx[i]].next_state[row])):
+                                if replay_memory[exp_idx[i]].next_state[2][row][col] == 1:
+                                    next_Q_map_mask[row][col] = np.NINF # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
+
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
-                        # # max_action = max(Q at state s')
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
+                        # max_action = max(Q at state s')
+                        ###############################################
                         # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
                         # next_Q.append(max. of next_Q_map)
+                        ###############################################
 
                         # if well_num == 5 (terminal state):
                         #   yi = ri
