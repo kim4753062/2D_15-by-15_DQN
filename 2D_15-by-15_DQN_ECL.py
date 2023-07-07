@@ -587,7 +587,7 @@ def _select_well_loc(args, probability: list) -> tuple:
             well_loc = ((i%args.gridnum_x)+1, (i//args.gridnum_x)+1) # (x, y) for ECL, (Row, Col) for Python.
             return well_loc
 
-    # If well location selection
+    # If well location selection failed.
     print("Well location selection was not appropriately done!")
 
 #################################### NPV Calculation #####################################
@@ -598,7 +598,10 @@ def _calculate_income(args, tstep_idx: int, FOPT: list, FWPT: list, FWIT: list) 
     water_treat = (FWPT[tstep_idx+1] - FWPT[tstep_idx]) * args.water_treatment / (((1 + args.discount_rate)) ** (args.time_step * (tstep_idx + 1) / 365))
     water_inj = (FWIT[tstep_idx+1] - FWIT[tstep_idx]) * args.water_injection / (((1 + args.discount_rate)) ** (args.time_step * (tstep_idx + 1) / 365))
 
+    # 2023-07-07: Changed unit income ($ >> MM$)
+    # income = oil_income - water_treat - water_inj
     income = oil_income - water_treat - water_inj
+    # income = income / (10^6)
 
     return income
 
