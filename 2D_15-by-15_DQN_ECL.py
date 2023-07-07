@@ -224,7 +224,7 @@ def main():
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current[i].current_action[1]][subset_current[i].current_action[0]])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current.exp_list[i].current_action[1]][subset_current.exp_list[i].current_action[0]])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
                         # max_action = max(Q at state s')
                         ###############################################
                         # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
