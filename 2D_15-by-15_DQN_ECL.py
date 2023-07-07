@@ -196,7 +196,8 @@ def main():
             exp_idx = [random.randint(0, len(replay_memory)-1) for r in range(args.batch_size)] # Indices for subset
             subset_current = Experience_list(args=args)
             for i in range(args.batch_size):
-                subset_current.exp_list.append(replay_memory[exp_idx[i]])
+                # subset_current.exp_list.append(replay_memory[exp_idx[i]])
+                subset_current.exp_list.append(replay_memory.exp_list[exp_idx[i]])
             subset_next = copy.deepcopy(subset_current) # For calculation of max. Q-value at next state
             for element in subset_next.exp_list: # Replace current state with next state, so if DataLoader called for subset_next, next state will be used for DQN.
                 element.current_state = element.next_state
@@ -212,12 +213,13 @@ def main():
 
                     # Do Well placement masking before finding max. Q-value
                     # next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy())
-                    next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy(), axis=1) # For 2-D well placement
+                    # next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy(), axis=1) # For 2-D well placement
+                    next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map.detach()).cpu().numpy(), axis=1)  # For 2-D well placement
                     for i in range(args.batch_size):
-                        for row in range(len(replay_memory[exp_idx[i]].next_state[2])): # sample.next_state[2]: Well placement map
-                            for col in range(len(replay_memory[exp_idx[i]].next_state[row])):
-                                if replay_memory[exp_idx[i]].next_state[2][row][col] == 1:
-                                    next_Q_map_mask[row][col] = np.NINF # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
+                        for row in range(len(replay_memory.exp_list[exp_idx[i]].next_state[2])): # replay_memory.exp_list[exp_idx[i]].next_state[2]: Well placement map
+                            for col in range(len(replay_memory.exp_list[exp_idx[i]].next_state[2][row])):
+                                if replay_memory.exp_list[exp_idx[i]].next_state[2][row][col] == 1:
+                                    next_Q_map_mask[i][row][col] = np.NINF # (x, y) for ECL, (Row(y), Col(x)) for Python / 2D-map array
 
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
@@ -231,13 +233,13 @@ def main():
 
                         # if well_num == 5 (terminal state):
                         #   yi = ri
-                        if np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
-                            target_Q.append(replay_memory[exp_idx[i]].reward)
+                        if np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
+                            target_Q.append(replay_memory.exp_list[exp_idx[i]].reward)
 
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
-                        elif np.cumsum(np.array(replay_memory[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
-                            target_Q.append(replay_memory[exp_idx[i]].reward + args.discount_factor * (next_Q[i]))
+                        elif np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
+                            target_Q.append(replay_memory.exp_list[exp_idx[i]].reward + args.discount_factor * (next_Q[i]))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
