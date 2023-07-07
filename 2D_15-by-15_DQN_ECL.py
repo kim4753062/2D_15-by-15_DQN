@@ -227,7 +227,8 @@ def main():
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][int(subset_current.exp_list[i].current_action[1])][int(subset_current.exp_list[i].current_action[0])].reshape(1))  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
+                        # (x, y) for ECL, (Row=y, Col=x) for Python [Index: 1~nx for ECL, 0~(nx-1) for Python] / 2D-map array
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][int(subset_current.exp_list[i].current_action[1])-1][int(subset_current.exp_list[i].current_action[0])-1].reshape(1))
                         # max_action = max(Q at state s')
                         max_row, max_col = np.where(np.array(next_Q_map_mask[i]) == max(map(max, np.array(next_Q_map_mask[i]))))
                         # next_Q.append(next_Q_map_mask[i][max_row][max_col])
@@ -253,7 +254,7 @@ def main():
                 # Update Q-network parameter: theta = theta - args.learning_rate * grad(L(theta))
                 optimizer.zero_grad()
                 loss.requires_grad_(True)
-                loss.backward(requires_grad=True)
+                loss.backward(retain_graph=True)
                 optimizer.step()
         # Decrease tau (temperature parameter of Boltzmann policy)
         args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * 5
