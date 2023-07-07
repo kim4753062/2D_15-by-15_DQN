@@ -547,20 +547,21 @@ def _run_program(args, program: str, filename: str):
 #################################### Boltzmann policy #################################### Certified
 # Transform Q-value map (2D array) to Well placement probability map (2D array)
 def _Boltzmann_policy(args, Q_value: list, well_placement: list) -> list:
-    exp_tau = deepcopy(Q_value)
-    probability = deepcopy(Q_value)
+    Q_value_list = np.squeeze(Q_value.tolist())
+    exp_tau = deepcopy(Q_value_list)
+    probability = deepcopy(Q_value_list)
 
     # Prevent overflow error by exponential operation
-    max_Q_value = np.array(Q_value).flatten().max()
+    max_Q_value = np.array(Q_value_list).flatten().max()
 
     # Get exponential of all elements in Q_value
-    for i in range(0, len(Q_value)):
-        for j in range(0, len(Q_value[i])):
+    for i in range(0, args.gridnum_y):
+        for j in range(0, args.gridnum_x):
             exp_tau[i][j] = np.exp((exp_tau[i][j]-max_Q_value)/args.tau)
 
     # Calculate probability map
-    for i in range(0, len(Q_value)):
-        for j in range(0, len(Q_value[i])):
+    for i in range(0, args.gridnum_y):
+        for j in range(0, args.gridnum_x):
             probability[i][j] = exp_tau[i][j] / np.concatenate(np.array(exp_tau)).sum()
 
     # Mask probability map: Setting probability = 0 where wells were already exists,
