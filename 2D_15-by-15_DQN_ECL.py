@@ -502,18 +502,6 @@ def _read_ecl_rsm(args, algorithm_iter_count: int, sample_num: int, tstep_idx: i
             line = file_read.readline()
         # 4. Collect production or injection data
         lines_converted = []
-        # if dynamic_type == 'FOPT':
-        #     for i in range(1, round(args.total_production_time/args.time_step)+1):
-        #         lines_converted.append([element.strip() for element in line.split()][2])
-        #         line = file_read.readline()
-        # elif dynamic_type == 'FWPT':
-        #     for i in range(1, round(args.total_production_time/args.time_step)+1):
-        #         lines_converted.append([element.strip() for element in line.split()][3])
-        #         line = file_read.readline()
-        # elif dynamic_type == 'FWIT':
-        #     for i in range(1, round(args.total_production_time/args.time_step)+1):
-        #         lines_converted.append([element.strip() for element in line.split()][4])
-        #         line = file_read.readline()
         if dynamic_type == 'FOPT':
             while line:
                 lines_converted.append([element.strip() for element in line.split()][2])
