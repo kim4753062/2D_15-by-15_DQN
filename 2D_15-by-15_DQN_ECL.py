@@ -601,7 +601,7 @@ def _calculate_income(args, tstep_idx: int, FOPT: list, FWPT: list, FWIT: list) 
     # 2023-07-07: Changed unit income ($ >> MM$)
     # income = oil_income - water_treat - water_inj
     income = oil_income - water_treat - water_inj
-    # income = income / (10^6)
+    income = income / (10^6)
 
     return income
 
