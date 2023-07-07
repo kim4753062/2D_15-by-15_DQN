@@ -253,7 +253,7 @@ def main():
                 # Update Q-network parameter: theta = theta - args.learning_rate * grad(L(theta))
                 optimizer.zero_grad()
                 loss.requires_grad_(True)
-                loss.backward()
+                loss.backward(requires_grad=True)
                 optimizer.step()
         # Decrease tau (temperature parameter of Boltzmann policy)
         args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * 5
