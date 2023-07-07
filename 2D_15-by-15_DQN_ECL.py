@@ -547,7 +547,7 @@ def _run_program(args, program: str, filename: str):
 #################################### Boltzmann policy #################################### Certified
 # Transform Q-value map (2D array) to Well placement probability map (2D array)
 def _Boltzmann_policy(args, Q_value: list, well_placement: list) -> list:
-    Q_value_list = np.squeeze(Q_value.tolist())
+    Q_value_list = np.squeeze(Q_value)
     exp_tau = deepcopy(Q_value_list)
     probability = deepcopy(Q_value_list)
 
@@ -566,8 +566,8 @@ def _Boltzmann_policy(args, Q_value: list, well_placement: list) -> list:
 
     # Mask probability map: Setting probability = 0 where wells were already exists,
     # and Scale the rest of probability map
-    probability = [[0 if well_placement[i][j] != 0 else probability[i][j] for j in range(len(Q_value[i]))] for i in range(len(Q_value))]
-    probability = [[(probability[i][j]/np.concatenate(np.array(probability)).sum()) for j in range(len(Q_value[i]))] for i in range(len(Q_value))]
+    probability = [[0 if well_placement[i][j] != 0 else probability[i][j] for j in range(args.gridnum_x)] for i in range(args.gridnum_y)]
+    probability = [[(probability[i][j]/np.concatenate(np.array(probability)).sum()) for j in range(args.gridnum_x)] for i in range(args.gridnum_y)]
 
     return probability
 
