@@ -224,21 +224,22 @@ def main():
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][subset_current.exp_list[i].current_action[1]][subset_current.exp_list[i].current_action[0]])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][int(subset_current.exp_list[i].current_action[1])][int(subset_current.exp_list[i].current_action[0])])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
                         # max_action = max(Q at state s')
-                        ###############################################
-                        # row, col = np.where(np.array(yi_mask) == max(map(max, np.array(yi_mask))))
-                        # next_Q.append(max. of next_Q_map)
-                        ###############################################
+                        max_row, max_col = np.where(np.array(next_Q_map_mask[i]) == max(map(max, np.array(next_Q_map_mask[i]))))
+                        # next_Q.append(next_Q_map_mask[i][max_row][max_col])
+                        next_Q.append(next_Q_map_mask[i][max_row[0]][max_col[0]])
 
                         # if well_num == 5 (terminal state):
                         #   yi = ri
-                        if np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
+                        # if np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
+                        if np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] == 5:  # sample.next_state[2]: Well placement map
                             target_Q.append(replay_memory.exp_list[exp_idx[i]].reward)
 
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
-                        elif np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
+                        # elif np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
+                        elif np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] < 5:  # sample.next_state[2]: Well placement map
                             target_Q.append(replay_memory.exp_list[exp_idx[i]].reward + args.discount_factor * (next_Q[i]))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
@@ -248,12 +249,8 @@ def main():
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-            # Decrease tau (temperature parameter of Boltzmann policy)
-            #
-        args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(
-            args.max_iteration + 1 - m) + args.boltzmann_tau_end) / \
-                   ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(
-                       args.max_iteration) + args.boltzmann_tau_end) * 5
+        # Decrease tau (temperature parameter of Boltzmann policy)
+        args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * 5
 
 ################################################################################################
 ###################################### Definition: Class #######################################
