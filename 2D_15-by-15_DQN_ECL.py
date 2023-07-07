@@ -186,9 +186,12 @@ def main():
 
         for b in range(1, args.replay_batch_num + 1):
             # # Extract b-th experience data from replay memory
-            target_Q = deque()  # Target Q value, yi
-            current_Q = deque()  # For calculation of loss
-            next_Q = deque() # For calculation of Target Q value
+            # target_Q = deque()  # Target Q value, yi
+            target_Q = []  # Target Q value, yi
+            # current_Q = deque()  # For calculation of loss
+            current_Q = []  # For calculation of loss
+            # next_Q = deque() # For calculation of Target Q value
+            next_Q = []  # For calculation of Target Q value
 
             # We want to know indices of Experience samples which are selected, but DataLoader does not support fuction
             # of searching indices of selected Experience samples directly.
@@ -224,7 +227,7 @@ def main():
                     for i in range(args.batch_size):
                         # Q-value for current_state will always be used, but Q-value for next_state cannot be used if next_state is terminal state
                         # Output dimension: (batch_size, 1, gridnum_y, gridnum_x)
-                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][int(subset_current.exp_list[i].current_action[1])][int(subset_current.exp_list[i].current_action[0])])  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
+                        current_Q.append(Deep_Q_Network.forward(sample_current)[i][0][int(subset_current.exp_list[i].current_action[1])][int(subset_current.exp_list[i].current_action[0])].reshape(1))  # (x, y) for ECL, (Row=y, Col=x) for Python / 2D-map array
                         # max_action = max(Q at state s')
                         max_row, max_col = np.where(np.array(next_Q_map_mask[i]) == max(map(max, np.array(next_Q_map_mask[i]))))
                         # next_Q.append(next_Q_map_mask[i][max_row][max_col])
@@ -234,19 +237,22 @@ def main():
                         #   yi = ri
                         # if np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
                         if np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] == 5:  # sample.next_state[2]: Well placement map
-                            target_Q.append(replay_memory.exp_list[exp_idx[i]].reward)
+                            target_Q.append(replay_memory.exp_list[exp_idx[i]].reward.reshape(1))
 
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
                         # elif np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
                         elif np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] < 5:  # sample.next_state[2]: Well placement map
-                            target_Q.append(replay_memory.exp_list[exp_idx[i]].reward + args.discount_factor * (next_Q[i]))
+                            target_Q.append((replay_memory.exp_list[exp_idx[i]].reward + args.discount_factor * (next_Q[i])).reshape(1))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
-                loss = criterion(target_Q, current_Q)
+                # 'collections.deque' object has no attribute 'size'
+                # loss = criterion(target_Q, current_Q)
+                loss = criterion(torch.cat(target_Q), torch.cat(current_Q))
                 # Update Q-network parameter: theta = theta - args.learning_rate * grad(L(theta))
                 optimizer.zero_grad()
+                loss.requires_grad_(True)
                 loss.backward()
                 optimizer.step()
         # Decrease tau (temperature parameter of Boltzmann policy)
