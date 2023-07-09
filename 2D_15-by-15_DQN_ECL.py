@@ -90,7 +90,7 @@ def main():
     args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
     args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
     args.replay_batch_num = 16 # Replay batch num., B
-    args.nn_update_num = 50 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
+    args.nn_update_num = 1 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
     args.batch_size = 32 # Batch size, N
     args.replay_memory_size = 1000 # Replay memory size, K
 
