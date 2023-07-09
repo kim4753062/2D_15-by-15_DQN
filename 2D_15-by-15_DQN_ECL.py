@@ -79,28 +79,29 @@ def main():
 
     # args.total_episode = 100
     args.learning_rate = 0.1  # Learning rate Alpha
-    args.boltzmann_tau_start = 5.0  # Start value of Temperature parameter at Boltzmann policy, Tau
+    # args.boltzmann_tau_start = 5.0  # Start value of Temperature parameter at Boltzmann policy, Tau
+    args.boltzmann_tau_start = 8.0  # Start value of Temperature parameter at Boltzmann policy, Tau
     args.boltzmann_tau_end = 0.1  # End value of Temperature parameter at Boltzmann policy, Tau
     # args.total_reward = 0
     args.epsilon = 0.1
 
-    # # For Implementation
-    # args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
-    # args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
-    # args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
-    # args.replay_batch_num = 16 # Replay batch num., B
-    # args.nn_update_num = 20 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
-    # args.batch_size = 32 # Batch size, N
-    # args.replay_memory_size = 1000 # Replay memory size, K
+    # For Implementation
+    args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
+    args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
+    args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
+    args.replay_batch_num = 16 # Replay batch num., B
+    args.nn_update_num = 50 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
+    args.batch_size = 32 # Batch size, N
+    args.replay_memory_size = 1000 # Replay memory size, K
 
-    # For Debugging
-    args.max_iteration = 5  # Maximum iteration num. of algorithm, MAX_STEPS
-    args.sample_num_per_iter = 3  # Simulation sample num. of each iteration of algorithm
-    args.experience_num_per_iter = 15  # Experience sample num. of each iteration of algorithm, h
-    args.replay_batch_num = 4  # Replay batch num., B
-    args.nn_update_num = 4  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
-    args.batch_size = 8  # Batch size, N
-    args.replay_memory_size = 30  # Replay memory size, K
+    # # For Debugging
+    # args.max_iteration = 5  # Maximum iteration num. of algorithm, MAX_STEPS
+    # args.sample_num_per_iter = 3  # Simulation sample num. of each iteration of algorithm
+    # args.experience_num_per_iter = 15  # Experience sample num. of each iteration of algorithm, h
+    # args.replay_batch_num = 4  # Replay batch num., B
+    # args.nn_update_num = 4  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
+    # args.batch_size = 8  # Batch size, N
+    # args.replay_memory_size = 30  # Replay memory size, K
 
     args.gridnum_x = 15
     args.gridnum_y = 15
