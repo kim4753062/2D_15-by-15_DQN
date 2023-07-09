@@ -647,18 +647,27 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
 
     Q_network = network
 
+    ####################################################################################################################
+    ####################################################################################################################
+    ####################################################################################################################
+    # Read simulation samples if they exist
+    if os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}")):
+        for time_step in range(0, args.total_well_num_max):
+
+
+        return well_placement_sample
+
+    ####################################################################################################################
+    ####################################################################################################################
+    ####################################################################################################################
+
     if not os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}")):
         os.mkdir(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}"))
 
     # Well placement sampling
     for time_step in range(0, args.total_well_num_max):
-        ####################################################################################################################################################################################
         # Inference of Q-value from PRESSURE, SOIL, and Well placement
-        # Q_map = Q_network.forward([well_placement_sample.PRESSURE_map[time_step], well_placement_sample.SOIL_map[time_step], well_placement_sample.well_loc_map[time_step]])
-        # Q_map = Q_network.forward(torch.tensor(data = [well_placement_sample.PRESSURE_map[time_step], well_placement_sample.SOIL_map[time_step], well_placement_sample.well_loc_map[time_step]], dtype=torch.float, device='cuda', requires_grad=True))
         Q_map = Q_network.forward(torch.tensor(data = [[well_placement_sample.PRESSURE_map[time_step], well_placement_sample.SOIL_map[time_step], well_placement_sample.well_loc_map[time_step]]], dtype=torch.float, device='cuda', requires_grad=True))
-
-        ####################################################################################################################################################################################
 
         # Calculate well placement probability and Specify well location
         prob = _Boltzmann_policy(args=args, Q_value=Q_map.tolist(), well_placement=well_placement_sample.well_loc_map[time_step])
