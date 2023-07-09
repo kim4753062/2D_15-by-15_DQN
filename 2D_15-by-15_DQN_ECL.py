@@ -1,10 +1,9 @@
 # Problem definition:
 # Placing 5 production well sequentially in 2D 15-by-15 heterogeneous reservoir
 # Period of well placement is 120 days, and total production period is 600 days (Well placement time from simulation starts: 0-120-240-360-480)
-# 다 작성되면 우성이 코드 보내주기
-import copy
 
 ######################################## 1. Import required modules #############################################
+import copy
 import numpy as np
 from collections import deque
 import os.path
@@ -82,6 +81,7 @@ def main():
     # args.boltzmann_tau_start = 5.0  # Start value of Temperature parameter at Boltzmann policy, Tau
     args.boltzmann_tau_start = 8.0  # Start value of Temperature parameter at Boltzmann policy, Tau
     args.boltzmann_tau_end = 0.1  # End value of Temperature parameter at Boltzmann policy, Tau
+    args.boltzmann_tau_tracker = [args.boltzmann_tau_start]
     # args.total_reward = 0
     args.epsilon = 0.1
 
@@ -248,6 +248,9 @@ def main():
                 optimizer.step()
         # Decrease tau (temperature parameter of Boltzmann policy)
         args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * 5
+        # Tracking variation of tau
+        args.boltzmann_tau_tracker.append(args.tau)
+        print(args.tau)
 
 ################################################################################################
 ###################################### Definition: Class #######################################
@@ -578,7 +581,7 @@ def _calculate_income(args, tstep_idx: int, FOPT: list, FWPT: list, FWIT: list) 
     # 2023-07-07: Changed unit income ($ >> MM$)
     # income = oil_income - water_treat - water_inj
     income = oil_income - water_treat - water_inj
-    income = income / (10^6)
+    income = income / (10 ** 6)
 
     return income
 
@@ -650,10 +653,53 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
     ####################################################################################################################
     ####################################################################################################################
     ####################################################################################################################
-    # Read simulation samples if they exist
-    if os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}")):
-        for time_step in range(0, args.total_well_num_max):
+    # Read simulation samples if they already exist
+    if os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}", f"{args.ecl_filename}_SAM{sample_num}_SEQ{args.total_well_num_max}.PRT")):
+        # Read well location from simulation file
+        well_loc_list_from_simulation = []
 
+        with open(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}", f"{args.well_filename}_Sam{sample_num}_Seq{args.total_well_num_max}.DATA")) as file_read:
+            line = file_read.readline()
+            for time_step in range(0, args.total_well_num_max):
+                line = file_read.readline()
+                line = file_read.readline()
+                line_list = [element.strip() for element in line.split()]
+                well_loc = (int(line_list[2]), int(line_list[3]))
+                well_loc_list_from_simulation.append(well_loc)
+                if time_step == args.total_well_num_max - 1:
+                    break
+                while not line.startswith("--WELL"):
+                    line = file_read.readline()
+
+        for time_step in range(0, args.total_well_num_max):
+            os.chdir(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}"))
+
+            well_loc = well_loc_list_from_simulation[time_step]
+            well_placement_sample.well_loc_list.append(well_loc)
+
+            # Read PRESSURE, SOIL map from .PRT file and calculate income with .RSM file
+            pressure_map = _read_ecl_prt_2d(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='PRESSURE')
+            soil_map = _read_ecl_prt_2d(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='SOIL')
+
+            fopt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FOPT')
+            fwpt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FWPT')
+            fwit = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FWIT')
+
+            income = _calculate_income(args=args, tstep_idx=time_step, FOPT=fopt, FWPT=fwpt, FWIT=fwit)
+
+            well_placement_map = deepcopy(well_placement_sample.well_loc_map[time_step])
+            for i in range(0, args.gridnum_x):
+                for j in range(0, args.gridnum_y):
+                    if (i == well_loc[0]-1) and (j == well_loc[1]-1):
+                        well_placement_map[j][i] = 1
+
+            # Append PRESSURE map, SOIL map, Well placement map, Income
+            well_placement_sample.PRESSURE_map.append(pressure_map)
+            well_placement_sample.SOIL_map.append(soil_map)
+            well_placement_sample.well_loc_map.append(well_placement_map)
+            well_placement_sample.income.append(income)
+
+            os.chdir('../../')
 
         return well_placement_sample
 
@@ -661,10 +707,10 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
     ####################################################################################################################
     ####################################################################################################################
 
+    # If simulation samples didn't exist, do Well placemnet sampling
     if not os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}")):
         os.mkdir(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}"))
 
-    # Well placement sampling
     for time_step in range(0, args.total_well_num_max):
         # Inference of Q-value from PRESSURE, SOIL, and Well placement
         Q_map = Q_network.forward(torch.tensor(data = [[well_placement_sample.PRESSURE_map[time_step], well_placement_sample.SOIL_map[time_step], well_placement_sample.well_loc_map[time_step]]], dtype=torch.float, device='cuda', requires_grad=True))
