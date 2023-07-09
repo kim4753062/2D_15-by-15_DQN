@@ -169,11 +169,10 @@ def main():
     args.tau = args.boltzmann_tau_start
 
     for m in range(1, args.max_iteration + 1):
-        # Generate well placement simulation sample list, length of list is (args.sample_num_per_iter).
+        # Generate well placement simulation sample list, length of list is "args.sample_num_per_iter"
         simulation_sample = []
 
         # Total num. of experience == args.sample_num_per_iter * (args.total_production_time / args.time_step)
-        # For this case, Total num. of experience == 50 * (600/120) == 250
         for i in range(1, args.sample_num_per_iter + 1):
             simulation_sample.append(
                 _simulation_sampler(args=args, algorithm_iter_count=m, sample_num=i, network=Deep_Q_Network))
@@ -187,11 +186,8 @@ def main():
 
         for b in range(1, args.replay_batch_num + 1):
             # # Extract b-th experience data from replay memory
-            # target_Q = deque()  # Target Q value, yi
             target_Q = []  # Target Q value, yi
-            # current_Q = deque()  # For calculation of loss
             current_Q = []  # For calculation of loss
-            # next_Q = deque() # For calculation of Target Q value
             next_Q = []  # For calculation of Target Q value
 
             # We want to know indices of Experience samples which are selected, but DataLoader does not support fuction
@@ -200,7 +196,6 @@ def main():
             exp_idx = [random.randint(0, len(replay_memory)-1) for r in range(args.batch_size)] # Indices for subset
             subset_current = Experience_list(args=args)
             for i in range(args.batch_size):
-                # subset_current.exp_list.append(replay_memory[exp_idx[i]])
                 subset_current.exp_list.append(replay_memory.exp_list[exp_idx[i]])
             subset_next = copy.deepcopy(subset_current) # For calculation of max. Q-value at next state
             for element in subset_next.exp_list: # Replace current state with next state, so if DataLoader called for subset_next, next state will be used for DQN.
@@ -216,8 +211,6 @@ def main():
                     next_Q_map = Deep_Q_Network.forward(sample_next) # Tensor >> Tensor
 
                     # Do Well placement masking before finding max. Q-value
-                    # next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy())
-                    # next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map).numpy(), axis=1) # For 2-D well placement
                     next_Q_map_mask = numpy.squeeze(deepcopy(next_Q_map.detach()).cpu().numpy(), axis=1)  # For 2-D well placement
                     for i in range(args.batch_size):
                         for row in range(len(replay_memory.exp_list[exp_idx[i]].next_state[2])): # replay_memory.exp_list[exp_idx[i]].next_state[2]: Well placement map
@@ -237,20 +230,16 @@ def main():
 
                         # if well_num == 5 (terminal state):
                         #   yi = ri
-                        # if np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) == 5: # sample.next_state[2]: Well placement map
                         if np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] == 5:  # sample.next_state[2]: Well placement map
                             target_Q.append(replay_memory.exp_list[exp_idx[i]].reward.reshape(1))
 
                         # elif well_num < 5 (non-terminal state):
                         #   yi = ri + args.discount_factor * max.Q_value(Q_network(s', a'))
-                        # elif np.cumsum(np.array(replay_memory.exp_list[exp_idx[i]].next_state[2])) < 5: # sample.next_state[2]: Well placement map
                         elif np.cumsum(replay_memory.exp_list[exp_idx[i]].next_state[2].detach().cpu().numpy())[-1] < 5:  # sample.next_state[2]: Well placement map
                             target_Q.append((replay_memory.exp_list[exp_idx[i]].reward + args.discount_factor * (next_Q[i])).reshape(1))
 
                 # Loss calculation (Mean Square Error (MSE)): L(theta) = sum((yi - Q_network(s, a))^2) / args.batch_size
                 criterion = nn.SmoothL1Loss()
-                # 'collections.deque' object has no attribute 'size'
-                # loss = criterion(target_Q, current_Q)
                 loss = criterion(torch.cat(target_Q), torch.cat(current_Q))
                 # Update Q-network parameter: theta = theta - args.learning_rate * grad(L(theta))
                 optimizer.zero_grad()
@@ -443,7 +432,6 @@ def _read_ecl_prt_2d(args, algorithm_iter_count: int, sample_num: int, tstep_idx
 
     # File IO
     # 1. Open .PRT file
-    # with open(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}", f"{args.ecl_filename}_SAM{sample_num}_SEQ{tstep_idx}.PRT")) as file_read:
     with open(f"{args.ecl_filename}_SAM{sample_num}_SEQ{tstep_idx}.PRT") as file_read:
         line = file_read.readline()
         if dynamic_type == 'PRESSURE':
@@ -687,9 +675,6 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
         pressure_map = _read_ecl_prt_2d(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='PRESSURE')
         soil_map = _read_ecl_prt_2d(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='SOIL')
 
-        # fopt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='FOPT')
-        # fwpt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='FWPT')
-        # fwit = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step+1, dynamic_type='FWIT')
         fopt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FOPT')
         fwpt = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FWPT')
         fwit = _read_ecl_rsm(args=args, algorithm_iter_count=algorithm_iter_count, sample_num=sample_num, tstep_idx=time_step, dynamic_type='FWIT')
