@@ -76,8 +76,7 @@ def main():
     args.perm_filename = 'PERMX'
     args.well_filename = 'WELL'
 
-    # args.total_episode = 100
-    args.learning_rate = 0.1  # Learning rate Alpha
+    args.learning_rate = 0.001  # Learning rate Alpha
     # args.boltzmann_tau_start = 5.0  # Start value of Temperature parameter at Boltzmann policy, Tau
     args.boltzmann_tau_start = 8.0  # Start value of Temperature parameter at Boltzmann policy, Tau
     args.boltzmann_tau_end = 0.1  # End value of Temperature parameter at Boltzmann policy, Tau
@@ -85,11 +84,19 @@ def main():
     # args.total_reward = 0
     args.epsilon = 0.1
 
-    # For Implementation
-    args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
-    args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
-    args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
-    args.replay_batch_num = 16 # Replay batch num., B
+    # For Implementation # 2023-07-09 (2nd Trial)
+    # args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
+    # args.max_iteration = 10  # Maximum iteration num. of algorithm, MAX_STEPS
+    args.max_iteration = 20  # Maximum iteration num. of algorithm, MAX_STEPS
+
+    # args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
+    # args.sample_num_per_iter = 10
+    args.sample_num_per_iter = 20
+
+    # args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
+    args.experience_num_per_iter = 100  # Experience sample num. of each iteration of algorithm, h
+    # args.replay_batch_num = 16 # Replay batch num., B
+    args.replay_batch_num = 32  # Replay batch num., B
     args.nn_update_num = 1 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
     args.batch_size = 32 # Batch size, N
     args.replay_memory_size = 1000 # Replay memory size, K
@@ -247,10 +254,15 @@ def main():
                 loss.backward(retain_graph=True)
                 optimizer.step()
         # Decrease tau (temperature parameter of Boltzmann policy)
-        args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * 5
+        args.tau = ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration + 1 - m) + args.boltzmann_tau_end) / ((args.boltzmann_tau_start - args.boltzmann_tau_end) * np.log(args.max_iteration) + args.boltzmann_tau_end) * args.boltzmann_tau_start
         # Tracking variation of tau
         args.boltzmann_tau_tracker.append(args.tau)
         print(args.tau)
+
+        # Do simulation sampling with last tau value
+        simulation_sample_last = []
+        for i in range(1, args.sample_num_per_iter + 1):
+            simulation_sample_last.append(_simulation_sampler(args=args, algorithm_iter_count=m+1, sample_num=i, network=Deep_Q_Network))
 
 ################################################################################################
 ###################################### Definition: Class #######################################
@@ -650,9 +662,6 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
 
     Q_network = network
 
-    ####################################################################################################################
-    ####################################################################################################################
-    ####################################################################################################################
     # Read simulation samples if they already exist
     if os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}", f"{args.ecl_filename}_SAM{sample_num}_SEQ{args.total_well_num_max}.PRT")):
         # Read well location from simulation file
@@ -702,10 +711,6 @@ def _simulation_sampler(args, algorithm_iter_count: int, sample_num: int, networ
             os.chdir('../../')
 
         return well_placement_sample
-
-    ####################################################################################################################
-    ####################################################################################################################
-    ####################################################################################################################
 
     # If simulation samples didn't exist, do Well placemnet sampling
     if not os.path.exists(os.path.join(args.simulation_directory, f"Step{algorithm_iter_count}_Sample{sample_num}")):
@@ -763,10 +768,15 @@ def _experience_sampler(args, simulation_sample_list: list[WellPlacementSample])
         for j in range(0, args.total_well_num_max):
             exp = Experience(args=args)
             # torch.tensor(data=list, dtype=torch.float, device='cuda', requires_grad=True)
-            exp.current_state = [simulation_sample_list[i].PRESSURE_map[j], simulation_sample_list[i].SOIL_map[j], simulation_sample_list[i].well_loc_map[j]]
+            # exp.current_state = [simulation_sample_list[i].PRESSURE_map[j], simulation_sample_list[i].SOIL_map[j], simulation_sample_list[i].well_loc_map[j]]
+            # exp.current_action = simulation_sample_list[i].well_loc_list[j]
+            # exp.reward = simulation_sample_list[i].income[j]
+            # exp.next_state = [simulation_sample_list[i].PRESSURE_map[j+1], simulation_sample_list[i].SOIL_map[j+1], simulation_sample_list[i].well_loc_map[j+1]]
+            # 2023-07-09: Min-Max scaling for Pressure and SOIL
+            exp.current_state = [np.array(simulation_sample_list[i].PRESSURE_map[j])/args.initial_PRESSURE, np.array(simulation_sample_list[i].SOIL_map[j])/args.initial_SOIL, simulation_sample_list[i].well_loc_map[j]]
             exp.current_action = simulation_sample_list[i].well_loc_list[j]
             exp.reward = simulation_sample_list[i].income[j]
-            exp.next_state = [simulation_sample_list[i].PRESSURE_map[j+1], simulation_sample_list[i].SOIL_map[j+1], simulation_sample_list[i].well_loc_map[j+1]]
+            exp.next_state = [np.array(simulation_sample_list[i].PRESSURE_map[j+1])/args.initial_PRESSURE, np.array(simulation_sample_list[i].SOIL_map[j+1])/args.initial_SOIL, simulation_sample_list[i].well_loc_map[j+1]]
             exp.transform()
             experience_list.append(exp)
 
