@@ -87,19 +87,20 @@ def main():
     # For Implementation # 2023-07-09 (2nd Trial)
     # args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
     # args.max_iteration = 10  # Maximum iteration num. of algorithm, MAX_STEPS
-    args.max_iteration = 20  # Maximum iteration num. of algorithm, MAX_STEPS
+    args.max_iteration = 100  # Maximum iteration num. of algorithm, MAX_STEPS
 
     # args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
     # args.sample_num_per_iter = 10
-    args.sample_num_per_iter = 20
+    args.sample_num_per_iter = 10
 
     # args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
-    args.experience_num_per_iter = 100  # Experience sample num. of each iteration of algorithm, h
+    args.experience_num_per_iter = 50  # Experience sample num. of each iteration of algorithm, h
     # args.replay_batch_num = 16 # Replay batch num., B
-    args.replay_batch_num = 32  # Replay batch num., B
+    args.replay_batch_num = 16  # Replay batch num., B
     args.nn_update_num = 1 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
-    args.batch_size = 32 # Batch size, N
-    args.replay_memory_size = 1000 # Replay memory size, K
+    args.batch_size = 16 # Batch size, N
+    # args.replay_memory_size = 1000 # Replay memory size, K
+    args.replay_memory_size = 2000  # Replay memory size, K
 
     # # For Debugging
     # args.max_iteration = 5  # Maximum iteration num. of algorithm, MAX_STEPS
