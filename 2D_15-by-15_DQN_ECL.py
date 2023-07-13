@@ -1,8 +1,7 @@
-###################### 1. Import required modules and arguments from parsing.py ###########################
+###################### 1. Import required modules and arguments from parsing.py ########################### #
 from parsing import *
 
 def main():
-
     ######################################## 2. Run algorithm ##############################################
     # Directory setting
     if not os.path.exists(args.simulation_directory):
