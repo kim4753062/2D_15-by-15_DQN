@@ -1,4 +1,4 @@
-###################### 1. Import required modules and arguments from parsing.py ############################
+###################### 1. Import required modules and arguments from parsing.py ###########################
 from parsing import *
 
 def main():
