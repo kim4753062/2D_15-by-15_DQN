@@ -43,6 +43,15 @@ def main():
     args.istensorboard = False
 
     '''
+    Deep Q Network (DQN) State, Action, Environment, Reward definition:
+    
+    State: Pressure distribution, Oil saturation, Well placement map
+    Action: Well placement (Coordinate of well location)
+    Environment: Reservoir simulator
+    Reward: NPV at each time segment
+    '''
+
+    '''
     Directory setting: ([]: Folder)
 
     - [Master directory] (Prerequisite directory)
@@ -67,6 +76,7 @@ def main():
     '''
 
     # Modified from J.Y. Kim. (2020)
+    # Arguments: Directory and File name
     args.master_directory = os.getcwd()
     args.basicfilepath = 'data'
     args.simulation_directory = 'simulation'
@@ -76,41 +86,8 @@ def main():
     args.perm_filename = 'PERMX'
     args.well_filename = 'WELL'
 
-    args.learning_rate = 0.001  # Learning rate Alpha
-    # args.boltzmann_tau_start = 5.0  # Start value of Temperature parameter at Boltzmann policy, Tau
-    args.boltzmann_tau_start = 8.0  # Start value of Temperature parameter at Boltzmann policy, Tau
-    args.boltzmann_tau_end = 0.1  # End value of Temperature parameter at Boltzmann policy, Tau
-    args.boltzmann_tau_tracker = [args.boltzmann_tau_start]
-    # args.total_reward = 0
-    args.epsilon = 0.1
 
-    # For Implementation # 2023-07-09 (2nd Trial)
-    # args.max_iteration = 50 # Maximum iteration num. of algorithm, MAX_STEPS
-    # args.max_iteration = 10  # Maximum iteration num. of algorithm, MAX_STEPS
-    args.max_iteration = 100  # Maximum iteration num. of algorithm, MAX_STEPS
-
-    # args.sample_num_per_iter = 50 # Simulation sample num. of each iteration of algorithm
-    # args.sample_num_per_iter = 10
-    args.sample_num_per_iter = 10
-
-    # args.experience_num_per_iter = 250 # Experience sample num. of each iteration of algorithm, h
-    args.experience_num_per_iter = 50  # Experience sample num. of each iteration of algorithm, h
-    # args.replay_batch_num = 16 # Replay batch num., B
-    args.replay_batch_num = 16  # Replay batch num., B
-    args.nn_update_num = 1 # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
-    args.batch_size = 16 # Batch size, N
-    # args.replay_memory_size = 1000 # Replay memory size, K
-    args.replay_memory_size = 2000  # Replay memory size, K
-
-    # # For Debugging
-    # args.max_iteration = 5  # Maximum iteration num. of algorithm, MAX_STEPS
-    # args.sample_num_per_iter = 3  # Simulation sample num. of each iteration of algorithm
-    # args.experience_num_per_iter = 15  # Experience sample num. of each iteration of algorithm, h
-    # args.replay_batch_num = 4  # Replay batch num., B
-    # args.nn_update_num = 4  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
-    # args.batch_size = 8  # Batch size, N
-    # args.replay_memory_size = 30  # Replay memory size, K
-
+    # Arguments: Reservoir simulation
     args.gridnum_x = 15
     args.gridnum_y = 15
     args.gridsize_x = 120  # ft
@@ -126,30 +103,44 @@ def main():
     args.initial_PRESSURE = 3500  # psi
     args.initial_SOIL = 0.75
 
-    # 2023-05-02: For reproduction
+
+    # Arguments: Random seed number
     args.random_seed = 202022673
     random.seed(args.random_seed)
     np.random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
 
-    # For calculation of revenue at each time step
+
+    # Arguments: Price and Cost of oil and water
     args.oil_price = 60  # $/bbl
     args.water_treatment = 3  # $/bbl
     args.water_injection = 5  # $/bbl
 
-    # State: Pressure distribution, Oil saturation, Well placement map
 
-    # Action: Well placement (Coordinate of well location)
+    # Arguments: Hyperparameters for Deep Q Network (DQN)
+    args.learning_rate = 0.001  # Learning rate Alpha
+    args.boltzmann_tau_start = 8.0  # Start value of Temperature parameter at Boltzmann policy, Tau
+    args.boltzmann_tau_end = 0.1  # End value of Temperature parameter at Boltzmann policy, Tau
+    args.boltzmann_tau_tracker = [args.boltzmann_tau_start]
+    args.epsilon = 0.1
 
-    # Environment: Reservoir simulator
+    args.max_iteration = 20  # Maximum iteration num. of algorithm, MAX_STEPS
 
-    # Reward: NPV at each time segment
+    args.sample_num_per_iter = 20 # Simulation sample num. of each iteration of algorithm
+    args.experience_num_per_iter = args.total_well_num_max * args.sample_num_per_iter  # Experience sample num. of each iteration of algorithm, h
+
+    args.replay_batch_num = 16  # Replay batch num., B
+
+    args.nn_update_num = 1  # CNN update number, U: [(1) Constant num. of iteration], (2) Lower limit of loss function value
+
+    args.batch_size = 16  # Batch size, N
+
+    args.replay_memory_size = 2000  # Replay memory size, K
 
     args.discount_rate = 0.1  # Used for calculation of NPV
     args.discount_factor = 1  # Used for Q-value update
 
-    # Data for State
-    args.input_flag = ('PRESSURE', 'SOIL', 'Well_placement')
+    args.input_flag = ('PRESSURE', 'SOIL', 'Well_placement') # Data for State
 
     ######################################## 3. Run algorithm #############################################
     # Directory setting
