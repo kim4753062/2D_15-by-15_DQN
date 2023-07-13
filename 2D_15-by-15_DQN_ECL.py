@@ -1,7 +1,3 @@
-# Problem definition:
-# Placing 5 production well sequentially in 2D 15-by-15 heterogeneous reservoir
-# Period of well placement is 120 days, and total production period is 600 days (Well placement time from simulation starts: 0-120-240-360-480)
-
 ######################################## 1. Import required modules #############################################
 import copy
 import numpy as np
@@ -41,6 +37,12 @@ def main():
     # 2023-05-02
     # For using tensorboard
     args.istensorboard = False
+
+    '''
+    Problem definition:
+    Placing 5 production well sequentially in 2D 15-by-15 heterogeneous reservoir
+    Period of well placement is 120 days, and total production period is 600 days (Well placement time from simulation starts: 0-120-240-360-480)
+    '''
 
     '''
     Deep Q Network (DQN) State, Action, Environment, Reward definition:
